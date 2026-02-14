@@ -309,6 +309,13 @@
             <div class="w-full px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16 items-center">
                     <div class="flex items-center gap-3">
+                        <!-- Sidebar Toggle Button (Mobile & Desktop) -->
+                        <button id="btn-toggle-sidebar" class="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                        </button>
+
                          <h1 class="text-2xl font-extrabold tracking-tighter title-gradient">
                             Ghost Chat
                         </h1>
@@ -375,10 +382,10 @@
             </div>
 
             <!-- Online Players Sidebar -->
-            <aside id="players-sidebar" class="w-72 bg-gray-900/90 backdrop-blur-xl border-l border-gray-800 transition-all duration-300 ease-in-out transform flex flex-col absolute inset-y-0 right-0 md:relative">
+            <aside id="players-sidebar" class="w-72 bg-gray-900/90 backdrop-blur-xl border-l border-gray-800 transition-all duration-300 ease-in-out transform flex flex-col absolute inset-y-0 right-0 md:relative z-40">
                 <div class="p-4 border-b border-gray-800 flex items-center justify-between">
                     <h3 class="font-bold text-gray-200">Ghosts</h3>
-                    <button id="toggle-sidebar-mobile" class="md:hidden text-gray-500">
+                    <button id="close-sidebar-mobile" class="md:hidden text-gray-500 hover:text-white">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
@@ -496,6 +503,8 @@
         const chatError = document.getElementById('chat-error');
         
         const playersSidebar = document.getElementById('players-sidebar');
+        const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+        const closeSidebarMobile = document.getElementById('close-sidebar-mobile');
         const usersList = document.getElementById('users-list');
         
         // Profile Elements
@@ -533,7 +542,8 @@
         let unsubscribeUsers = null;
         let presenceInterval = null;
         let isEditMode = false;
-        
+        let isSidebarOpen = true;
+
         // Global access for onclick handlers
         window.openProfile = openProfile;
         window.closeProfile = closeProfile;
@@ -581,6 +591,34 @@
                 title.textContent = 'Create an account';
             }
         }
+        
+        // --- Sidebar Toggle Logic ---
+        function toggleSidebar() {
+            isSidebarOpen = !isSidebarOpen;
+            if (isSidebarOpen) {
+                playersSidebar.classList.remove('sidebar-collapsed');
+            } else {
+                playersSidebar.classList.add('sidebar-collapsed');
+            }
+        }
+        
+        btnToggleSidebar.addEventListener('click', toggleSidebar);
+        closeSidebarMobile.addEventListener('click', toggleSidebar);
+
+        // Check screen size for initial state
+        function checkScreenSize() {
+            if (window.innerWidth < 768) {
+                // Mobile: Default closed
+                isSidebarOpen = false;
+                playersSidebar.classList.add('sidebar-collapsed');
+            } else {
+                // Desktop: Default open
+                isSidebarOpen = true;
+                playersSidebar.classList.remove('sidebar-collapsed');
+            }
+        }
+        window.addEventListener('resize', checkScreenSize);
+        checkScreenSize();
 
         // --- Auth Listeners ---
         onAuthStateChanged(auth, async (user) => {
@@ -771,9 +809,15 @@
             avatarLoader.classList.add('hidden');
             
             if (url) {
-                // Manually update modal avatar view temporarily until realtime listener kicks in
-                // (Though realtime listener is fast, this gives instant feedback)
-                // Actually, let's wait for realtime listener or just rely on standard update
+                // INSTANT VISUAL UPDATE
+                // Update Modal Avatar
+                const newAvatarHTML = `<img src="${url}" class="w-full h-full object-cover" onerror="this.style.display='none'">`;
+                modalAvatarContainer.innerHTML = newAvatarHTML;
+                
+                // Update Header Avatar
+                if (headerAvatar) {
+                    headerAvatar.innerHTML = newAvatarHTML;
+                }
             }
             fileInputAvatar.value = '';
         });
